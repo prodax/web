@@ -4,3 +4,4 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html).
 
 from . import test_darkroom_modal
+from . import test_data_get

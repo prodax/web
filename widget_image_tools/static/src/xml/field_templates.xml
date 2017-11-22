@@ -17,7 +17,7 @@
     </t>
 
     <t t-extend="FieldBinaryImage">
-        <t t-jquery=".oe_form_binary_file_edit" t-operation="replace">
+        <t t-jquery=".o_select_file_button" t-operation="replace">
             <t t-if="widget.darkroom_supported()">
                 <div class="col-md-12 image-menu oe_form_binary_file_edit">
                     <i class="fa fa-pencil-square-o image-fa-lg" title="Edit"></i>
@@ -25,6 +25,16 @@
                 </div>
             </t>
         </t>
+
+        <t t-jquery=".fa-trash-o" t-operation="replace">
+        </t>
+        <t t-jquery=".oe_form_binary_file_edit" t-operation="after">
+            <div class="col-md-12 image-menu oe_form_binary_file_clear">
+                <i class="fa fa-trash-o fa-lg" title="Clear"></i>
+                <span class="image-menu-text" >Delete</span>
+            </div>
+        </t>
+
 
         <t t-jquery=".oe_form_binary_file_edit" t-operation="after">
             <a class="col-md-12 image-menu oe_form_binary_file_download image-a-color">
@@ -58,13 +68,6 @@
                 <i class="fa fa-chevron-left image-fa-lg" title="Back"></i>
                 <span class="image-menu-text" >Back</span>
              </div>
-        </t>
-
-        <t t-jquery=".oe_form_binary_file_clear" t-operation="replace">
-            <div class="col-md-12 image-menu oe_form_binary_file_clear">
-                <i class="fa fa-trash-o image-fa-lg" title="Clear"></i>
-                <span class="image-menu-text" >Delete</span>
-            </div>
         </t>
 
         <t t-jquery=".oe_form_binary_file_edit" t-operation="after">

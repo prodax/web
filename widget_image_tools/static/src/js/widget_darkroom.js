@@ -12,7 +12,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
     var common = require('web.form_common');
     var session = require('web.session');
     var utils = require('web.utils');
-    var _ = require('_');
+    //var _ = require('_');
 
     var QWeb = core.qweb;
     var form_widget = require('web.form_widgets');

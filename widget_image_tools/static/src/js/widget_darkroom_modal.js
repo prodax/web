@@ -10,7 +10,7 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
     var core = require('web.core');
     var DataModel = require('web.DataModel');
     var QWeb = core.qweb;
-    var $ = require('$');
+    //var $ = require('$');
     var _t = core._t;
 
     core.form_widget_registry.get('image').include({
@@ -119,8 +119,10 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
             self.openModal(file_base64, {'click':'crop'});
         },
         render_value: function() {
+            console.log("213");
             var self = this;
             if (this.url_clicked) {
+                //this.$el.children(".img-responsive").remove();
                 this.$el.children("img[name='image_medium']").remove();
                 this.$el.children(".input_url").remove();
                 this.$el.prepend($(QWeb.render("AttachmentURL", {widget: this})));
@@ -130,7 +132,10 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 this._super();
                 //***from web_widget_image_download
                 var $widget = this.$el.find('.oe_form_binary_file_download');
+                //var image = this.$el.children(".img-responsive");
+                
                 var image = this.$el.find('img[name="' + this.name + '"]');
+                console.log(image);
                 if (image.attr('src')){
                     this.imgSrc = image.attr('src');
                     this.imgSrc = this.imgSrc.replace('image_medium','image').toString();

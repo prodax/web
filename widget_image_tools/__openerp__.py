@@ -8,7 +8,7 @@
     'summary': 'Provides web widget for image editing and adds it to standard'
                ' image widget as modal',
     'version': '9.0.1.0.1',
-    'category': 'Web',
+    'category': 'Tools',
     'website': 'https://vk.com/id20132180',
     'author': 'Shurshilov Artem',
     'license': 'LGPL-3',
@@ -30,4 +30,5 @@
     "post_load": "post_load",
     "pre_init_hook": None,
     "post_init_hook": None,
+    "external_dependencies": {"python": [], "bin": []},
 }
