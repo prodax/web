@@ -25,6 +25,7 @@ Usage
 =====
 
 After installing the module, you can use it in the following ways
+
 * 1. Instant use with default settings!
 
 * 2. The widget passes options directly through to image, which supports the 
@@ -50,27 +51,27 @@ After installing the module, you can use it in the following ways
   see video on youtube raw:: html
         <iframe width="560" height="315" src="https://www.youtube.com/watch?v=OOU8AkYuW1E" frameborder="0" allowfullscreen></iframe>
 
-  .. image:: /widget_image_tools/static/description/Menu.png
+  .. image:: https://raw.githubusercontent.com/shurshilov/web/10.0/widget_image_tools/static/description/Menu.png
      :alt: WIE menu
      :class: img-thumbnail
      :height: 360
 
-  .. image:: /widget_image_tools/static/description/Edit.png
+  .. image:: https://raw.githubusercontent.com/shurshilov/web/10.0/widget_image_tools/static/description/Edit.png
      :alt: WIE edit
      :class: img-thumbnail col-xs-offset-1
      :height: 360
 
-  .. image:: /widget_image_tools/static/description/Zoom.png
+  .. image:: https://raw.githubusercontent.com/shurshilov/web/10.0/widget_image_tools/static/description/Zoom.png
      :alt: WIE zoom
      :class: img-thumbnail col-xs-offset-1
      :height: 360
 
-  .. image:: /widget_image_tools/static/description/Preview.png
+  .. image:: https://raw.githubusercontent.com/shurshilov/web/10.0/widget_image_tools/static/description/Preview.png
      :alt: WIE preview
      :class: img-thumbnail col-xs-offset-1
      :height: 360
 
-  .. image:: /widget_image_tools/static/description/Download_origin.png
+  .. image:: https://raw.githubusercontent.com/shurshilov/web/10.0/widget_image_tools/static/description/Download_origin.png
      :alt: WIE download origin with origin name
      :class: img-thumbnail col-xs-offset-1
      :height: 360
