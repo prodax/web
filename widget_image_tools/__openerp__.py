@@ -27,6 +27,9 @@
     'qweb': [
         'static/src/xml/field_templates.xml',
     ],
+    'images':[
+            'static/description/Edit.png',
+    ],
     "post_load": "post_load",
     "pre_init_hook": None,
     "post_init_hook": None,
