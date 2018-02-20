@@ -6,6 +6,13 @@
     color: @odoo-brand-primary;
 }
 
+
+.o_form_view .o_form_field_image:hover .o_form_image_controls {
+    opacity: 0.8;
+    display:block;
+}
+
+
 .o_form_image_controls i {
     margin: 0 5%;
 }
@@ -14,13 +21,14 @@
 }
 .o_form_view .o_form_field_image .o_form_image_controls {
     position: absolute;
-    top: 1px;    
-    padding: 6px 0;
+    display:none;
+    top: 0;    
+    padding: 0px 0;
     /*width: 100%;*/
     /*display: none;*/
     text-align: left;
-    right: 100%;
-    width: 170px;
+    left: 0;
+    width: 270px;
     color: #eee;
     background: rgba(37,37,37,.9);
     -moz-border-radius: 3px 3px 0 0;
