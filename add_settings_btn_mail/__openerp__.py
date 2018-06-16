@@ -20,7 +20,7 @@ This is extension for <field widget="image"> widget image
     'category': "Tools",
 	   'version': '1.0',
     # any module necessary for this one to work correctly
-    'depends': ['web'],    
+    'depends': ['base','mail','hr'],    
     "license": "LGPL-3",
 #    'price': 9.99,
 #    'currency': 'EUR',

@@ -3,6 +3,156 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
 "use strict";
 
     var Followers = require('mail.Followers');
+    var ThreadField = require('mail.ThreadField');
+    var ChatThread = require('mail.ChatThread');
+    var concurrency = require('web.concurrency');
+    var core = require('web.core');
+    var session = require('web.session');
+    var data = require('web.data');
+    var ActionManager = require('web.ActionManager');
+    var chat_manager = require('mail.chat_manager');
+    var Chatter = require('mail.Chatter');
+    var _t = core._t;
+    var QWeb = core.qweb;
+    var time = require('web.time');
+    var rpc = require('web.rpc');
+    var config = require('web.config');
+
+    var ORDER = {
+        ASC: 1,
+        DESC: -1,
+    };
+ 
+
+    Chatter.include({
+        //action by click
+        events: {
+            'click .o_chatter_button_new_message': '_onOpenComposerMessage',
+            'click .o_chatter_button_log_note': '_onOpenComposerNote',
+            'click .o_chatter_button_schedule_activity': '_onScheduleActivity',
+            'click .o_filter_checkbox': '_update',
+        },
+
+        //read from DB field hide_notification and change checkbox and reload message
+        start: function () {
+            var result = this._super.apply(this, arguments);
+            var self = this;
+            rpc.query({
+                        model: this.fields.thread.record.context.params.model,
+                        method: 'read',
+                        args: [[this.fields.thread.record.context.params.id], ['hide_notification']],
+
+                    }).then(function(result){
+                        var hide_notification = result[0].hide_notification
+                        //console.log('hide_notification read');
+                        //console.log(hide_notification);
+                        if (hide_notification)
+                            self.$('.o_filter_checkbox').prop( "checked", true );
+                        //console.log('hide_notification checkbox after read');
+                        //console.log(self.$('.o_filter_checkbox')[0].checked);
+
+                        if (self.$('.o_filter_checkbox')[0].checked)
+                            _.extend(self.fields.thread.thread.options, {filter: 'yes',});            
+                        else
+                            _.extend(self.fields.thread.thread.options, {filter: 'no',});
+                        
+                        self.update(self.fields.thread.record);
+                        self.fields.thread._onUpdateMessage(self.fields.thread.msgIDs);
+
+                        });
+
+            return result;
+        },
+
+        //Write to current model status checkbox and reload message (filtered)
+        _update: function () {
+            //console.log(this.fields.thread);
+          
+            rpc.query({
+                        model: this.fields.thread.record.context.params.model,
+                        method: 'write',
+                        args: [[this.fields.thread.record.context.params.id], {
+                hide_notification: this.$('.o_filter_checkbox')[0].checked,
+            },],
+
+                    })
+
+            if (this.$('.o_filter_checkbox')[0].checked)
+                _.extend(this.fields.thread.thread.options, {filter: 'yes',});            
+            else
+                _.extend(this.fields.thread.thread.options, {filter: 'no',});
+
+            this.update(this.fields.thread.record);
+            this.fields.thread._onUpdateMessage(this.fields.thread.msgIDs);
+
+
+
+        },
+    });
+    ChatThread.include({
+        render: function (messages, options) {
+ //           if (options.filter == 'yes')
+ //               messages = _.filter(messages, function(msg){ return (msg.message_type == 'email'); });
+            var self = this;
+            var msgs = _.map(messages, this._preprocess_message.bind(this));
+            if (this.options.display_order === ORDER.DESC) {
+                msgs.reverse();
+            }
+            options = _.extend({}, this.options, options);
+
+            // Hide avatar and info of a message if that message and the previous
+            // one are both comments wrote by the same author at the same minute
+            // and in the same document (users can now post message in documents
+            // directly from a channel that follows it)
+            var prev_msg;
+            _.each(msgs, function (msg) {
+                if (!prev_msg || (Math.abs(msg.date.diff(prev_msg.date)) > 60000) ||
+                    prev_msg.message_type !== 'comment' || msg.message_type !== 'comment' ||
+                    (prev_msg.author_id[0] !== msg.author_id[0]) || prev_msg.model !== msg.model ||
+                    prev_msg.res_id !== msg.res_id) {
+                    msg.display_author = true;
+                } else {
+                    msg.display_author = !options.squash_close_messages;
+                }
+                prev_msg = msg;
+            });
+            //my
+            //console.log(options.filter)
+            if (options.filter == 'yes')
+                msgs = _.filter(msgs, function(msg){ return (msg.message_type == 'comment' || msg.message_type == 'email' ); });
+            //msgs = _.filter(msgs, function(msg){ return (msg.message_type == 'comment' || msg.message_type == 'email' ); });
+            //msgs = _.filter(msgs, function(msg){ return (msg.message_type == 'email'); });
+
+            this.$el.html(QWeb.render('mail.ChatThread', {
+                messages: msgs,
+                options: options,
+                ORDER: ORDER,
+                date_format: time.getLangDatetimeFormat(),
+            }));
+
+            this.attachments = _.uniq(_.flatten(_.map(messages, 'attachment_ids')));
+
+            _.each(msgs, function(msg) {
+                var $msg = self.$('.o_thread_message[data-message-id="'+ msg.id +'"]');
+                $msg.find('.o_mail_timestamp').data('date', msg.date);
+
+                self.insert_read_more($msg);
+            });
+
+            if (!this.update_timestamps_interval) {
+                this.update_timestamps_interval = setInterval(function() {
+                    self.update_timestamps();
+                }, 1000*60);
+            }
+        },
+        _preprocess_message: function (message) {
+            var msg = this._super.apply(this, arguments);
+           // msg.partner_trackings = msg.partner_trackings || [];
+           msg.day = _t("Today111");
+            return msg;
+        },
+    });
+
 
     Followers.include({
         events: {
