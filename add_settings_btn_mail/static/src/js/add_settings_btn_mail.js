@@ -44,12 +44,12 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
 
                     }).then(function(result){
                         var hide_notification = result[0].hide_notification
-                        console.log('hide_notification read');
-                        console.log(hide_notification);
+                        //console.log('hide_notification read');
+                        //console.log(hide_notification);
                         if (hide_notification)
                             self.$('.o_filter_checkbox').prop( "checked", true );
-                        console.log('hide_notification checkbox after read');
-                        console.log(self.$('.o_filter_checkbox')[0].checked);
+                        //console.log('hide_notification checkbox after read');
+                        //console.log(self.$('.o_filter_checkbox')[0].checked);
 
                         if (self.$('.o_filter_checkbox')[0].checked)
                             _.extend(self.fields.thread.thread.options, {filter: 'yes',});            
@@ -74,7 +74,7 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
                         model: this.fields.thread.model,
                         method: 'write',
                         args: [[this.fields.thread.res_id], {
-              hide_notification: check,
+                                hide_notification: check,
             },],
 
                     })
