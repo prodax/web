@@ -32,33 +32,93 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
             'click .o_chatter_button_schedule_activity': '_onScheduleActivity',
             'click .o_filter_checkbox': '_update',
         },
+ // public
+    update: function (record, fieldNames) {
+        var self = this;
 
-        //read from DB field hide_notification and change checkbox and reload message
-        start: function () {
-            var res = this._super.apply(this, arguments);
-            var self = this;
+        // close the composer if we switch to another record as it is record dependent
+        if (this.record.res_id !== record.res_id) {
+            this._closeComposer(true);
+            //console.log('updateOLD');
+            //console.log(this.fields.thread.res_id);
+            this.fields.thread.res_id = record.res_id;
+            //console.log(this.fields.thread.res_id);
             rpc.query({
                         model: this.fields.thread.model,
                         method: 'read',
                         args: [[this.fields.thread.res_id], ['hide_notification']],
 
                     }).then(function(result){
-                        var hide_notification = result[0].hide_notification
                         //console.log('hide_notification read');
                         //console.log(hide_notification);
-                        if (hide_notification)
+                        //console.log('result');
+                        //console.log(hide_notification);
+                        if (result[0].hide_notification){
                             self.$('.o_filter_checkbox').prop( "checked", true );
-                        //console.log('hide_notification checkbox after read');
-                        //console.log(self.$('.o_filter_checkbox')[0].checked);
-
-                        if (self.$('.o_filter_checkbox')[0].checked)
-                            _.extend(self.fields.thread.thread.options, {filter: 'yes',});            
-                        else
+                            _.extend(self.fields.thread.thread.options, {filter: 'yes',});
+                        }
+                        else{
+                            self.$('.o_filter_checkbox').prop( "checked", false );                        
                             _.extend(self.fields.thread.thread.options, {filter: 'no',});
-                        
-                        self.update(self.fields.thread.record);
-                        self.fields.thread._onUpdateMessage(self.fields.thread.msgIDs);
+                        }                           
 
+                       self.update(record);
+                    });
+        }
+
+           
+        // update the state
+        this._setState(record);
+
+        // detach the thread and activity widgets (temporarily force the height to prevent flickering)
+        // keep the followers in the DOM as it has a synchronous pre-rendering
+        this.$el.height(this.$el.height());
+        if (this.fields.activity) {
+            this.fields.activity.$el.detach();
+        }
+        if (this.fields.thread) {
+            this.fields.thread.$el.detach();
+        }
+
+        // reset and re-append the widgets (and reset 'height: auto' rule)
+        // if fieldNames is given, only reset those fields, otherwise reset all fields
+        var fieldsToReset;
+        if (fieldNames) {
+            fieldsToReset = _.filter(this.fields, function (field) {
+                return _.contains(fieldNames, field.name);
+            });
+        } else {
+            fieldsToReset = this.fields;
+        }
+        var fieldDefs = _.invoke(fieldsToReset, 'reset', record);
+        var def = this.dp.add($.when.apply($, fieldDefs));
+        this._render(def).then(function () {
+            self.$el.height('auto');
+            self._updateMentionSuggestions();
+        });
+    },
+
+        //read from DB field hide_notification and change checkbox and reload message
+        start: function () {
+            var res = this._super.apply(this, arguments);
+            var self = this;
+            //console.log('start');
+            //console.log(this.fields.thread);
+            rpc.query({
+                        model: this.fields.thread.model,
+                        method: 'read',
+                        args: [[this.fields.thread.res_id], ['hide_notification']],
+
+                    }).then(function(result){
+                        if (result[0].hide_notification){
+                            self.$('.o_filter_checkbox').prop( "checked", true );
+                            _.extend(self.fields.thread.thread.options, {filter: 'yes',});
+                        }
+                        else{
+                            self.$('.o_filter_checkbox').prop( "checked", false );                        
+                            _.extend(self.fields.thread.thread.options, {filter: 'no',});
+                        }                        
+                        self.update(self.fields.thread.record);
                         });
 
             return res;
@@ -66,26 +126,25 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
 
         //Write to current model status checkbox and reload message (filtered)
         _update: function () {
-            //console.log(this.fields.thread);
+            console.log('update BUTTON');
             var check = false
-            if (this.$('.o_filter_checkbox')[0].checked)  
+
+            if (this.$('.o_filter_checkbox')[0].checked) {
+                _.extend(this.fields.thread.thread.options, {filter: 'yes',});
                 check = true
+            }
+            else
+                _.extend(this.fields.thread.thread.options, {filter: 'no',});
+
             rpc.query({
                         model: this.fields.thread.model,
                         method: 'write',
                         args: [[this.fields.thread.res_id], {
                                 hide_notification: check,
             },],
-
                     })
-
-            if (this.$('.o_filter_checkbox')[0].checked)
-                _.extend(this.fields.thread.thread.options, {filter: 'yes',});            
-            else
-                _.extend(this.fields.thread.thread.options, {filter: 'no',});
-
             this.update(this.fields.thread.record);
-            this.fields.thread._onUpdateMessage(this.fields.thread.msgIDs);
+            //this.fields.thread._onUpdateMessage(this.fields.thread.msgIDs);
 
 
 
