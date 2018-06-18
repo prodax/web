@@ -35,21 +35,21 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
 
         //read from DB field hide_notification and change checkbox and reload message
         start: function () {
-            var result = this._super.apply(this, arguments);
+            var res = this._super.apply(this, arguments);
             var self = this;
             rpc.query({
-                        model: this.fields.thread.record.context.params.model,
+                        model: this.fields.thread.model,
                         method: 'read',
-                        args: [[this.fields.thread.record.context.params.id], ['hide_notification']],
+                        args: [[this.fields.thread.res_id], ['hide_notification']],
 
                     }).then(function(result){
                         var hide_notification = result[0].hide_notification
-                        //console.log('hide_notification read');
-                        //console.log(hide_notification);
+                        console.log('hide_notification read');
+                        console.log(hide_notification);
                         if (hide_notification)
                             self.$('.o_filter_checkbox').prop( "checked", true );
-                        //console.log('hide_notification checkbox after read');
-                        //console.log(self.$('.o_filter_checkbox')[0].checked);
+                        console.log('hide_notification checkbox after read');
+                        console.log(self.$('.o_filter_checkbox')[0].checked);
 
                         if (self.$('.o_filter_checkbox')[0].checked)
                             _.extend(self.fields.thread.thread.options, {filter: 'yes',});            
@@ -61,18 +61,20 @@ odoo.define('add_settings_btn_mail.mail_settings_widget_extend', function (requi
 
                         });
 
-            return result;
+            return res;
         },
 
         //Write to current model status checkbox and reload message (filtered)
         _update: function () {
             //console.log(this.fields.thread);
-          
+            var check = false
+            if (this.$('.o_filter_checkbox')[0].checked)  
+                check = true
             rpc.query({
-                        model: this.fields.thread.record.context.params.model,
+                        model: this.fields.thread.model,
                         method: 'write',
-                        args: [[this.fields.thread.record.context.params.id], {
-                hide_notification: this.$('.o_filter_checkbox')[0].checked,
+                        args: [[this.fields.thread.res_id], {
+              hide_notification: check,
             },],
 
                     })
