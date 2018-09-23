@@ -8,22 +8,36 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
     'use strict';
 
     var core = require('web.core');
-    var DataModel = require('web.DataModel');
-    var QWeb = core.qweb;
-    //var $ = require('$');
+    var rpc = require('web.rpc');
+    //var QWeb = core.qweb;
+    var QWeb = require('web.QWeb');
     var _t = core._t;
+    var base_f = require('web.basic_fields');
+    var imageWidget = base_f.FieldBinaryImage;
+    var session = require('web.session');
+    var utils = require('web.utils');
+    var field_utils = require('web.field_utils');
 
-    core.form_widget_registry.get('image').include({
+
+    imageWidget.include({
+        events: _.extend({}, imageWidget.prototype.events, {
+            'click .oe_form_binary_file_upload': function () {
+                this.$('.o_input_file').click();
+            },
+            'click .oe_form_binary_file_clear': 'on_clear',
+        }),
         // Used in template to prevent Darkroom buttons from being added to
         // forms for new records, which are not supported
         darkroom_supported: function() {
-            if (this.field_manager.dataset.index === null) {
+            console.log(this);
+/*            if (this.field_manager.dataset.index === null) {
                 return false;
-            }
+            }*/
             return true;
         },
 
-        initialize_content: function() {
+        init: function (parent, name, record) {
+            this._super.apply(this, arguments);
             var self= this;
             //classic code
             this.$('input.o_form_input_file').change(this.on_file_change);
@@ -43,28 +57,35 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 self.back();
             });
             //***from ir_attachment_url
-            this.url_clicked = false;
-            this.is_url = false;
-            this.imgSrc = false;
             this.$('.oe_link_address_button').click(function() {
                 self.on_link_address();
             });
         },
 
-        // On close modal or click "save burron" update image by read js rpc
+        // On close modal or click "save button" update image by read js rpc
         updateImage: function() {
             var self = this;
             var ctx = self.getContext();
-            var ActiveModel = new DataModel(ctx.active_model);
+            //var ActiveModel = new DataModel(ctx.active_model);
             //set origin image
             if (ctx.active_field === 'image_medium')
                 ctx.active_field = 'image';
-            ActiveModel.query([ctx.active_field]).
+/*            ActiveModel.query([ctx.active_field]).
                 filter([['id', '=', ctx.active_record_id]]).
                 all().
                 then(function(result) {
                     self.set_value(result[0][ctx.active_field]);
-                });
+                });*/
+
+            rpc.query({
+                        model: ctx.active_model,
+                        method: 'search_read',
+                        args: [[['id', '=', ctx.active_record_id]]],
+                        context: ctx,
+                    }).
+                    then(function(result) {
+                        self.set_value(result[0][ctx.active_field]);
+                    });
         },
 
         openModal: function(file_base64, clickDefault) {
@@ -97,121 +118,133 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
 
         getContext: function() {
             var self = this;
-            var activeModel = self.field_manager.dataset._model.name;
-            var activeRecordId = self.field_manager.datarecord.id;
-            var activeField = self.node.attrs.name;
+            var activeModel = self.model;
+            var activeRecordId = self.res_id;
+            //var activeField = self.node.attrs.name;
+            var activeField = self.attrs.name;
             return {
                 active_model: activeModel,
                 active_record_id: activeRecordId,
                 active_field: activeField,
-                options: self.options,
+                //options: self.options,
             };
         },
         on_file_uploaded_and_valid: function(size, name, content_type, file_base64) {
-            var self = this;
-            this.internal_set_value(file_base64);
-            this.binary_value = true;
-            this.render_value();
             this.set_filename(name);
-
+            this._setValue(file_base64);
+            this._render();
             //shursh mode current image in context to modal 
             //and give options to Darkroom widget
-            self.openModal(file_base64, {'click':'crop'});
+            this.openModal(file_base64, {'click':'crop'});
         },
-        render_value: function() {
+        _render: function() {
             console.log("213");
             var self = this;
-            if (this.url_clicked) {
-                //this.$el.children(".img-responsive").remove();
-                this.$el.children("img[name='image_medium']").remove();
+            if (this.is_url_valid(this.value)) {
+                    console.log("найден URL");
+                    var attrs = this.attrs;
+                    var url = this.placeholder;
+                    if (this.value) {
+                        url = this.value;
+                    }
+                    var $img = $('<img>').attr('src', url);
+                    $img.css({
+                        width: this.nodeOptions.size
+                        ? this.nodeOptions.size[0]
+                        : attrs.img_width || attrs.width,
+                        height: this.nodeOptions.size
+                        ? this.nodeOptions.size[1]
+                        : attrs.img_height || attrs.height,
+                    });
+                    this.$('> img').remove();
+                    this.$el.prepend($img);
+                    $img.on('error', function () {
+                        self.on_clear();
+                        $img.attr('src', self.placeholder);
+                        self.do_warn(_t("Image"), _t("Could not display the selected image."));
+                    }); 
+            }
+            else {
                 this.$el.children(".input_url").remove();
-                this.$el.prepend($(QWeb.render("AttachmentURL", {widget: this})));
-                this.$input = this.$(".input_url input");
-            } else {
-                this.$el.children(".input_url").remove();
-                this._super();
+                this._super.apply(this, arguments);              
+                this.imgSrc = this.placeholder;
+                if (this.value) {
+                    if (!utils.is_bin_size(this.value)) {
+                        this.imgSrc = 'data:image/png;base64,' + this.value;
+                    } else {
+                        var field = this.nodeOptions.preview_image || this.name;
+                        if (field == "image_medium" ||
+                        field == "image_small")                
+                        field = "image";
+                        this.imgSrc = session.url('/web/image', {
+                            model: this.model,
+                            id: JSON.stringify(this.res_id),
+                            field: field,
+                            // unique forces a reload of the image when the record has been updated
+                            // unique: (this.recordData.__last_update || '').replace(/[^0-9]/g, ''),
+                            // check bug 17.01.18
+                          unique: field_utils.format.datetime(this.recordData.__last_update).replace(/[^0-9]/g, ''),
+                        });
+                    }
+                }
                 //***from web_widget_image_download
                 var $widget = this.$el.find('.oe_form_binary_file_download');
-                //var image = this.$el.children(".img-responsive");
-                
-                var image = this.$el.find('img[name="' + this.name + '"]');
-                console.log(image);
-                if (image.attr('src')){
-                    this.imgSrc = image.attr('src');
-                    this.imgSrc = this.imgSrc.replace('image_medium','image').toString();
-                    //original size href with target=_blank
-                    $widget.attr('href', this.imgSrc);
-                    $widget.attr('download', 'image.png');
-                    this.$el.find('.oe_form_binary_file_expand').attr('href', this.imgSrc);
-                }
-                //***from field_image_preview
-                $(image).click(function(e) {
-                    if(self.view.get("actual_mode") == "view") {
-                        var $button = $(".oe_form_button_edit");
-                        $button.openerpBounce();
-                        e.stopPropagation();
-                    }
-                    // set attr SRC image, in our hidden div
-                    $('#inner').attr({src: self.imgSrc});
-                    $('#outer').fadeIn('slow');
-                    $('#outer').click(function(e)
-                    {
-                        $(this).fadeOut();
-                    });
-                    $(document).mouseup(function (e){ // action click on web-document
-                        var div = $("#outer"); // ID-element
-                        if (!div.is(e.target) // if click NO our elementе
-                           && div.has(e.target).length === 0) { // and NO our children elemets
-                                div.hide(); 
-                        }
-                    });
-                    
-                });
-                //this.$el.find('#outer').remove();
-            }
+                $widget.attr('href', this.imgSrc);
+                $widget.attr('download', 'image.png');
 
+                //original size href with target=_blank
+                this.$el.find('.oe_form_binary_file_expand').attr('href', this.imgSrc);
+            
+                //***from field_image_preview
+                var image = this.$el.find('img[name="' + this.name + '"]');
+                $(image).click(function(e) {
+                        // set attr SRC image, in our hidden div
+                        var a = $('#outer').find('img')[0]
+                        if (a) a.remove();
+                        $('#outer').prepend('<img id="inner" src="'+self.imgSrc+'" />');
+                        //change css of parent because class oe_avatar 90x90 size maximum
+                        $('#outer').find('img').parent().css=({
+                            width:'100%',
+                            height:'100%',            
+                        });         
+                        $('#outer').fadeIn('slow');
+                
+                        $('#outer').click(function(e)
+                        {
+                            self.$('#inner').remove();
+                            $(this).fadeOut();
+
+                        });
+                        $(document).mouseup(function (e){ // action click on web-document
+                            var div = $("#outer"); // ID-element
+                            if (!div.is(e.target) // if click NO our elementе
+                               && div.has(e.target).length === 0) { // and NO our children elemets
+                                    div.hide(); 
+                            }
+                        });
+                        
+                });
+            }
             
         },
         //***from ir_attachment_url
-        store_dom_url_value: function () {
-            if (this.$input && this.$input.val()) {
-                if (this.is_url_valid()) {
-                    this.set_value(this.$input.val());
-                } else {
-                    this.do_warn(_t('Warning'), _t('URL is invalid.'));
-                }
-            }
-        },
-        back: function() {
-            this.is_url = false;
-            this.url_clicked = false;
-            this.set_filename(this.imgSrc);
-            this.render_value();           
-        },
         on_link_address: function() {
-            this.is_url = true;
-            if (!this.url_clicked) {
-                this.url_clicked = true;
-                this.render_value();
-            } else if (this.url_clicked) {
-                this.url_clicked = false;
-                this.render_value();
-            }
-           
+            var self = this;
+            this.$el.children(".img-responsive").remove();
+            this.$el.children(".input_url").remove();
+            this.$el.children(".o_form_image_controls").addClass("media_url_controls");
+            this.$el.prepend($(QWeb.render("AttachmentURL", {widget: this})));
+            this.$('.input_url input').on('change', function() {
+                var input_val = $(this).val();
+                self._setValue(input_val);
+            });
         },
-        commit_value: function () {
-            if (this.is_url) {
-                this.store_dom_url_value();
-                this.is_url = false;
-            }
-            return this._super();
-        },
-        is_url_valid: function() {
-            if (this.$input.is('input')) {
+        is_url_valid: function(value) {
+            if (value || (this.$input && this.$input.is('input'))) {
                 var u = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
-                return u.test(this.$input.val());
+                return u.test(value || this.$input.val());
             }
-            return true;
+            return false;
         },
 
     });

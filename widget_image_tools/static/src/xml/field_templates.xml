@@ -18,12 +18,10 @@
 
     <t t-extend="FieldBinaryImage">
         <t t-jquery=".o_select_file_button" t-operation="replace">
-            <t t-if="widget.darkroom_supported()">
-                <div class="col-md-6 image-menu oe_form_binary_file_edit">
+                 <div class="col-md-6 image-menu oe_form_binary_file_edit">
                     <i class="fa fa-pencil-square-o image-fa-lg" title="Edit"></i>
                     <span class="image-menu-text" >Edit</span>
                 </div>
-            </t>
         </t>
 
         <t t-jquery=".fa-trash-o" t-operation="replace">
@@ -97,14 +95,12 @@
     </t>
 
     <t t-name="FieldBinaryImage-img"> 
-        <img 
-            t-att-src='url'
-            t-att-border="widget.readonly ? 0 : 1"
-            t-att-name="widget.name"
-            t-att-width="widget.node.attrs.img_width || widget.node.attrs.width"
-            t-att-height="widget.node.attrs.img_height || widget.node.attrs.height"
-            class="in"
-        />
+        <img class="img img-responsive in"
+        t-att-src='url'
+        t-att-border="widget.readonly ? 0 : 1"
+        t-att-name="widget.name"
+        t-att-width="widget.nodeOptions.size ? widget.nodeOptions.size[0] : widget.attrs.img_width || widget.attrs.width"
+        t-att-height="widget.nodeOptions.size ? widget.nodeOptions.size[1] : widget.attrs.img_height || widget.attrs.height"/>
         <div id="outer">
             <img id="inner" src="" />
             <a href="#" class="open-block-close" title="close">x</a>
