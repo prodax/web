@@ -9,14 +9,19 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
     'use strict';
 
     var core = require('web.core');
+    var qweb = core.qweb;
     //var common = require('web.form_common');
     var AbstractField = require('web.AbstractField');
-    //var form_widget = require('web.form_widgets');
+    var widgetRegistry = require('web.widget_registry');
     var session = require('web.session');
     var utils = require('web.utils');
     //var QWeb = core.qweb;
     var QWeb = require('web.QWeb');
     var widgetRegistry = require('web.widget_registry');
+    var field_registry = require('web.field_registry');
+    var base_f = require('web.basic_fields');
+    var field_utils = require('web.field_utils');
+    var imageWidget = base_f.FieldBinaryImage;
 
 
     // overrie button "save" in modal darkromm for save only coords
@@ -30,8 +35,8 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
         },
     });*/
 
-    var FieldDarkroomImage = AbstractField.extend({
-/*        className: 'darkroom-widget',
+    var FieldDarkroomImage = imageWidget.extend({
+        className: 'darkroom-widget',
         template: 'FieldDarkroomImage',
         placeholder: "/web/static/src/img/placeholder.png",
         darkroom: null,
@@ -39,6 +44,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
         defaults: {
             // Canvas initialization size
+            size: [800,600],
             minWidth: 100,
             minHeight: 100,
             maxWidth: 800,
@@ -59,9 +65,21 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
             },
         },
 
-        init: function(field_manager, node) {
-            this._super(field_manager, node);
-            this.options = _.defaults(this.options, this.defaults);
+        init: function (parent, name, record) {
+            this._super.apply(this, arguments);
+            console.log(this);
+            this.nodeOptions = _.defaults(this.nodeOptions, this.defaults);
+            this.fields = record.fields;
+            this.useFileAPI = !!window.FileReader;
+            this.max_upload_size = 25 * 1024 * 1024; // 25Mo
+            if (!this.useFileAPI) {
+                var self = this;
+                this.fileupload_id = _.uniqueId('o_fileupload');
+                $(window).on(this.fileupload_id, function () {
+                    var args = [].slice.call(arguments).slice(1);
+                    self.on_file_uploaded.apply(self, args);
+                });
+            }
         },
 
         _init_darkroom: function(activeModal) {
@@ -219,52 +237,41 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
             return this._super(value);
         },
 
-        render_value: function() {
+        _render: function() {
             this.destroy_content();
-            //shursh mode
-            if (this.field_manager.dataset.context)
-                this._init_darkroom(this.field_manager.dataset.context.click);
-            else
-                this._init_darkroom('crop');
-
-
-            var url = null;
-            if (this.get('value') && !utils.is_bin_size(this.get('value'))) {
-                url = 'data:image/png;base64,' + this.get('value');
-            } else if (this.get('value')) {
-                var id = JSON.stringify(this.view.datarecord.id || null);
-                var field = this.name;
-                if (this.options.preview_image) {
-                    field = this.options.preview_image;
+            this._init_darkroom();
+            var self = this;
+            var url = this.placeholder;
+            if (this.value) {
+                if (!utils.is_bin_size(this.value)) {
+                    url = 'data:image/png;base64,' + this.value;
+                } else {
+                    url = session.url('/web/image', {
+                        model: this.model,
+                        id: JSON.stringify(this.res_id),
+                        field: this.nodeOptions.preview_image || this.name,
+                        // unique forces a reload of the image when the record has been updated
+                        unique: field_utils.format.datetime(this.recordData.__last_update).replace(/[^0-9]/g, ''),
+                    });
                 }
-                url = session.url('/web/image', {
-                    model: this.view.dataset.model,
-                    id: id,
-                    field: field,
-                    unique: (this.view.datarecord.__last_update || '').replace(/[^0-9]/g, ''),
-                });
-            } else {
-                url = this.placeholder;
             }
-
-            var $img = $(QWeb.render("FieldBinaryImage-img", {widget: this, url: url}));
-            this.$el.find('> img').remove();
-            this.$el.append($img);
+            console.log(url);
+            var $img = $(qweb.render("FieldBinaryImage-img", {widget: this, url: url}));
+            this.$('> img').remove();
+            this.$el.prepend($img);
+            $img.on('error', function () {
+                self.on_clear();
+                $img.attr('src', self.placeholder);
+                self.do_warn(_t("Image"), _t("Could not display the selected image."));
+            });
             //shursh mode
             //this.darkroom = new Darkroom($img.get(0), this.options);
-            var opt = _.defaults(this.field_manager.dataset.context.options, this.options);
+            var opt = _.defaults(this.record.context.options, this.nodeOptions);
             this.darkroom = new Darkroom($img.get(0), opt);
             this.darkroom.widget = this;
-        },
-
-        commit_value: function() {
-            if (this.darkroom.sourceImage) {
-                this.set_value(this.darkroom.sourceImage.toDataURL().split(',')[1]);
-            }
-        },*/
+            },
     });
-    //widgetRegistry.add("darkroom", FieldDarkroomImage);
-    core.form_widget_registry.add("darkroom", FieldDarkroomImage);
 
-    return {FieldDarkroomImage: FieldDarkroomImage};
+    field_registry.add('darkroom', FieldDarkroomImage);
+    return FieldDarkroomImage;
 });

@@ -9,7 +9,7 @@
 
 <templates id="field_templates" xml:space="preserve">
     <t t-name="FieldDarkroomImage">
-        <span class="oe_form_field o_form_field_darkroom" t-att-style="widget.node.attrs.style">
+        <span class="oe_form_field o_form_field_darkroom">
             <t t-if="!widget.get('effective_readonly')">
                 <div class="darkroom-toolbar"/>
             </t>

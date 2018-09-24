@@ -64,28 +64,8 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
 
         // On close modal or click "save button" update image by read js rpc
         updateImage: function() {
-            var self = this;
-            var ctx = self.getContext();
-            //var ActiveModel = new DataModel(ctx.active_model);
-            //set origin image
-            if (ctx.active_field === 'image_medium')
-                ctx.active_field = 'image';
-/*            ActiveModel.query([ctx.active_field]).
-                filter([['id', '=', ctx.active_record_id]]).
-                all().
-                then(function(result) {
-                    self.set_value(result[0][ctx.active_field]);
-                });*/
-
-            rpc.query({
-                        model: ctx.active_model,
-                        method: 'search_read',
-                        args: [[['id', '=', ctx.active_record_id]]],
-                        context: ctx,
-                    }).
-                    then(function(result) {
-                        self.set_value(result[0][ctx.active_field]);
-                    });
+            //var ctx = this.getContext();
+            //this.on_file_uploaded_and_valid(size, name, content_type, ctx.current_image);
         },
 
         openModal: function(file_base64, clickDefault) {
@@ -93,7 +73,7 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
             var context = self.getContext();
             if (file_base64)
                 //give current image and options from Image widget to Darkroom widget by context
-                context.current_image = file_base64
+                context.current_image = file_base64;
             else
                 //context for python function _default_image, open original image, not medium or small
                 context.size_image = 'image';
@@ -113,7 +93,8 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 self.updateImage();
             };
             var options = {on_close: updateImage};
-            self.do_action(modalAction, options);
+            //self.do_action(modalAction, options);
+            self.do_action(modalAction);
         },
 
         getContext: function() {
@@ -199,7 +180,7 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 var image = this.$el.find('img[name="' + this.name + '"]');
                 $(image).click(function(e) {
                         // set attr SRC image, in our hidden div
-                        var a = $('#outer').find('img')[0]
+                        var a = $('#outer').find('img')[0];
                         if (a) a.remove();
                         $('#outer').prepend('<img id="inner" src="'+self.imgSrc+'" />');
                         //change css of parent because class oe_avatar 90x90 size maximum
