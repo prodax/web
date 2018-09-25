@@ -15,7 +15,7 @@
                 <header />
                 <sheet>
                     <group name="data">
-                        <field name="image" widget="darkroom" nolabel="1" class="image-center"/>
+                        <field name="image" widget="darkroom" size="[300,400]" nolabel="1" class="image-center"/>
                     </group>
                 </sheet>
                 <footer>

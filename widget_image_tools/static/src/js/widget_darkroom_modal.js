@@ -9,7 +9,7 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
 
     var core = require('web.core');
     var rpc = require('web.rpc');
-    //var QWeb = core.qweb;
+    var qweb = core.qweb;
     var QWeb = require('web.QWeb');
     var _t = core._t;
     var base_f = require('web.basic_fields');
@@ -21,45 +21,33 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
 
     imageWidget.include({
         events: _.extend({}, imageWidget.prototype.events, {
+            //add 4 new button, override 1 button
             'click .oe_form_binary_file_upload': function () {
                 this.$('.o_input_file').click();
             },
+            'click .oe_form_binary_file_edit': function () {
+                this.openModal(null, {'click':'crop'});
+            },
+            'click .oe_form_binary_file_eye': function () {
+                this.openModal(null, {'click':'zoom'});
+            },
+            'click .oe_form_binary_file_back': function () {
+                this.back();
+            },
             'click .oe_form_binary_file_clear': 'on_clear',
+            //***from ir_attachment_url
+            'click .oe_link_address_button': function () {
+                this.on_link_address();
+            },
         }),
         // Used in template to prevent Darkroom buttons from being added to
         // forms for new records, which are not supported
         darkroom_supported: function() {
-            console.log(this);
+            //console.log(this);
 /*            if (this.field_manager.dataset.index === null) {
                 return false;
             }*/
             return true;
-        },
-
-        init: function (parent, name, record) {
-            this._super.apply(this, arguments);
-            var self= this;
-            //classic code
-            this.$('input.o_form_input_file').change(this.on_file_change);
-            this.$('button.oe_form_binary_file_save').click(this.on_save_as);
-            this.$('.oe_form_binary_file_clear').click(this.on_clear);
-            //override 4 button
-            this.$('.oe_form_binary_file_upload').click(function() {
-                self.$('input.o_form_input_file').click();
-            });
-            this.$('.oe_form_binary_file_edit').click(function() {
-                self.openModal(null, {'click':'crop'});
-            });
-            this.$('.oe_form_binary_file_eye').click(function() {
-                self.openModal(null, {'click':'zoom'});
-            });
-            this.$('.oe_form_binary_file_back').click(function() {
-                self.back();
-            });
-            //***from ir_attachment_url
-            this.$('.oe_link_address_button').click(function() {
-                self.on_link_address();
-            });
         },
 
         // On close modal or click "save button" update image by read js rpc
@@ -79,35 +67,29 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 context.size_image = 'image';
             if (clickDefault)
                 context.click = clickDefault.click;
-            //console.log("openModal");
-            //console.log(context);
+
             var modalAction = {
                 type: 'ir.actions.act_window',
                 res_model: 'darkroom.modal',
-                name: 'Darkroom',
+                name: 'Widget image editor',
                 views: [[false, 'form']],
                 target: 'new',
                 context: context,
             };
-            var updateImage =  function() {
+/*            var updateImage =  function() {
                 self.updateImage();
             };
-            var options = {on_close: updateImage};
+            var options = {on_close: updateImage};*/
             //self.do_action(modalAction, options);
             self.do_action(modalAction);
         },
 
         getContext: function() {
-            var self = this;
-            var activeModel = self.model;
-            var activeRecordId = self.res_id;
-            //var activeField = self.node.attrs.name;
-            var activeField = self.attrs.name;
             return {
-                active_model: activeModel,
-                active_record_id: activeRecordId,
-                active_field: activeField,
-                //options: self.options,
+                active_model: this.model,
+                active_record_id: this.res_id,
+                active_field: this.attrs.name,
+                options: this.nodeOptions,
             };
         },
         on_file_uploaded_and_valid: function(size, name, content_type, file_base64) {
@@ -147,8 +129,10 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
             }
             else {
                 this.$el.children(".input_url").remove();
-                this._super.apply(this, arguments);              
+                this._super.apply(this, arguments);
+                if (!this.imgSrc)    {    
                 this.imgSrc = this.placeholder;
+                this.value_old = this.value;}
                 if (this.value) {
                     if (!utils.is_bin_size(this.value)) {
                         this.imgSrc = 'data:image/png;base64,' + this.value;
@@ -208,13 +192,18 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
             }
             
         },
+        back: function() {
+            //this.set_filename(this.imgSrc);
+            this._setValue(this.value_old);
+            this._render();           
+        },
         //***from ir_attachment_url
         on_link_address: function() {
             var self = this;
             this.$el.children(".img-responsive").remove();
             this.$el.children(".input_url").remove();
             this.$el.children(".o_form_image_controls").addClass("media_url_controls");
-            this.$el.prepend($(QWeb.render("AttachmentURL", {widget: this})));
+            this.$el.prepend($(qweb.render("AttachmentURL", {widget: this})));
             this.$('.input_url input').on('change', function() {
                 var input_val = $(this).val();
                 self._setValue(input_val);

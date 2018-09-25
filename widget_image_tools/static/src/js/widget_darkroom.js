@@ -10,19 +10,12 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
     var core = require('web.core');
     var qweb = core.qweb;
-    //var common = require('web.form_common');
-    var AbstractField = require('web.AbstractField');
-    var widgetRegistry = require('web.widget_registry');
     var session = require('web.session');
     var utils = require('web.utils');
-    //var QWeb = core.qweb;
-    var QWeb = require('web.QWeb');
-    var widgetRegistry = require('web.widget_registry');
     var field_registry = require('web.field_registry');
     var base_f = require('web.basic_fields');
     var field_utils = require('web.field_utils');
     var imageWidget = base_f.FieldBinaryImage;
-
 
     // overrie button "save" in modal darkromm for save only coords
     // cropCurrentZone and not real crop for further crop on server side
@@ -44,7 +37,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
         defaults: {
             // Canvas initialization size
-            size: [800,600],
+            //size: [800,600],
             minWidth: 100,
             minHeight: 100,
             maxWidth: 800,
@@ -67,7 +60,6 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
         init: function (parent, name, record) {
             this._super.apply(this, arguments);
-            console.log(this);
             this.nodeOptions = _.defaults(this.nodeOptions, this.defaults);
             this.fields = record.fields;
             this.useFileAPI = !!window.FileReader;
@@ -176,16 +168,16 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
                     var buttonElement = document.createElement('button');
                     buttonElement.type = 'button';
-                    buttonElement.className = 'darkroom-button darkroom-button-' + optionsMerged.type;
+                    buttonElement.className = 'btn btn-sm oe_highlight darkroom-button darkroom-button-' + optionsMerged.type;
                     // shursh mode ADD title for buttongroup
                     if (optionsMerged.image == 'fa fa-search')
-                        this.element.innerHTML += 'Zoom mode:';
+                        this.element.innerHTML += '<label class="darkroom-label">Zoom mode:</label>';
                     if (optionsMerged.image == 'fa fa-crop')
-                        this.element.innerHTML += 'Crop mode:';
+                        this.element.innerHTML += '<label class="darkroom-label">Crop mode:</label>';
                     if (optionsMerged.image == 'fa fa-step-backward')
-                        this.element.innerHTML += 'History bar:';
+                        this.element.innerHTML += '<label class="darkroom-label">History bar:</label>';
                     if (optionsMerged.image == 'fa fa-undo oe_edit_only')
-                        this.element.innerHTML += 'Rotation bar:';
+                        this.element.innerHTML += '<label class="darkroom-label">Rotation bar:</label>';
 
                     buttonElement.innerHTML += '<i class="' + optionsMerged.image + ' fa-2x"></i>';
                     if (optionsMerged.editOnly) {
@@ -239,7 +231,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
         _render: function() {
             this.destroy_content();
-            this._init_darkroom();
+            this._init_darkroom(this.record.context.click);
             var self = this;
             var url = this.placeholder;
             if (this.value) {
@@ -255,7 +247,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
                     });
                 }
             }
-            console.log(url);
+            //console.log(url);
             var $img = $(qweb.render("FieldBinaryImage-img", {widget: this, url: url}));
             this.$('> img').remove();
             this.$el.prepend($img);

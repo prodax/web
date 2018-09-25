@@ -1,9 +1,20 @@
 .darkroom-button-group {
     display: inline;
+    position: relative;
+    right: 9%;
 }
 
 .darkroom-button-active {
-    color: @odoo-brand-primary;
+    background-color: #5cb85c !important;
+}
+.darkroom-label{
+    color: #000;
+    position: relative;
+    top: -30px;
+    left: 80px;
+}
+.darkroom-toolbar{
+  width:800px;
 }
 
 
@@ -19,17 +30,16 @@
 .input_url {
     margin-right: 5px;
 }
-.o_form_view .o_form_field_image .o_form_image_controls {
+.o_field_widget.o_field_image .o_form_image_controls {
     position: absolute;
-    display:none;
     top: 24px;    
     padding: 0px 0;
-    /*width: 100%;*/
-    /*display: none;*/
     text-align: left;
-    left: 0;
-    width: 270px;
+    left: -190%;
+    width: 290%;
+    max-width: 270px;
     color: #eee;
+    opacity: 0;
     background: rgba(37,37,37,.9);
     -moz-border-radius: 3px 3px 0 0;
     -webkit-border-radius: 3px 3px 0 0;
