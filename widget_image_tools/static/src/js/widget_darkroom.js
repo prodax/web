@@ -37,7 +37,7 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
 
         defaults: {
             // Canvas initialization size
-            //size: [800,600],
+            size: [800,600],
             minWidth: 100,
             minHeight: 100,
             maxWidth: 800,
