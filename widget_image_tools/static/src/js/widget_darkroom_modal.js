@@ -17,6 +17,8 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
     var session = require('web.session');
     var utils = require('web.utils');
     var field_utils = require('web.field_utils');
+    var rpc = require('web.rpc');
+    var Context = require('web.Context');
 
 
     imageWidget.include({
@@ -51,9 +53,32 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
         },
 
         // On close modal or click "save button" update image by read js rpc
-        updateImage: function() {
-            //var ctx = this.getContext();
-            //this.on_file_uploaded_and_valid(size, name, content_type, ctx.current_image);
+        updateImage: function(result) {
+            console.log("update");
+            console.log(this);
+            console.log(result);
+            var self = this;
+            var ctx = self.getContext();
+            console.log(ctx);
+            if (ctx.active_field === 'image_medium')
+                ctx.active_field = 'image';
+
+            return rpc.query({
+                        model: ctx.active_model,
+                        method: 'search_read',
+                        args: [
+                        	[['id', '=', ctx.active_record_id]], 
+                        	[ctx.active_field]
+                        ],
+                        context: new Context(),
+                    })
+            .then(function(result){
+            	console.log(result);
+                    result.forEach(function(result){
+                        self._setValue(result[ctx.active_field]);
+                        //self._render();
+                    });
+                });
         },
 
         openModal: function(file_base64, clickDefault) {
@@ -67,6 +92,7 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 context.size_image = 'image';
             if (clickDefault)
                 context.click = clickDefault.click;
+            //context.widget_image = "23423";
 
             var modalAction = {
                 type: 'ir.actions.act_window',
@@ -76,12 +102,11 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
                 target: 'new',
                 context: context,
             };
-/*            var updateImage =  function() {
+            var updateImage =  function() {
                 self.updateImage();
             };
-            var options = {on_close: updateImage};*/
-            //self.do_action(modalAction, options);
-            self.do_action(modalAction);
+            var options = {on_close: updateImage};
+            self.do_action(modalAction, options);
         },
 
         getContext: function() {
@@ -95,13 +120,13 @@ odoo.define('web_widget_darkroom.darkroom_modal_button', function(require) {
         on_file_uploaded_and_valid: function(size, name, content_type, file_base64) {
             this.set_filename(name);
             this._setValue(file_base64);
-            this._render();
+            //this._render();
             //shursh mode current image in context to modal 
             //and give options to Darkroom widget
             this.openModal(file_base64, {'click':'crop'});
         },
         _render: function() {
-            console.log("213");
+            //console.log("213");
             var self = this;
             if (this.is_url_valid(this.value)) {
                     console.log("найден URL");

@@ -16,17 +16,39 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
     var base_f = require('web.basic_fields');
     var field_utils = require('web.field_utils');
     var imageWidget = base_f.FieldBinaryImage;
+    var FormController = require('web.FormController');
+    var rpc = require('web.rpc');
+    var Context = require('web.Context');
+    
 
     // overrie button "save" in modal darkromm for save only coords
     // cropCurrentZone and not real crop for further crop on server side
     var darkroomBut = null;
-/*    form_widget.WidgetButton.include({
-        on_click: function() {
-            //if(this.node.attrs.id === "darkroom-save")
-            //    darkroomBut.darkroom.plugins.crop.cropCurrentZone(true);
-            this._super();
-        },
-    });*/
+    FormController.include({
+            _onButtonClicked: function (event) {
+                
+            if(event.data.attrs.id === "darkroom-save"){
+                var self = this;
+                var image_croped = self.renderer.allFieldWidgets[self.handle][0].darkroom.sourceImage.toDataURL().split(',')[1];                  
+                rpc.query({
+                            model: event.data.record.context.active_model,
+                            method: 'write',
+                            args: [
+                                [event.data.record.context.active_record_id], 
+                                { 'image': image_croped }
+                            ],
+                            context: new Context(),
+                        })
+                .then(function(result){
+                    //console.log(result);
+                });
+            }
+            this._super(event);
+                
+            },
+
+            
+    });
 
     var FieldDarkroomImage = imageWidget.extend({
         className: 'darkroom-widget',
@@ -225,11 +247,8 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
             }
         },
 
-        set_value: function(value) {
-            return this._super(value);
-        },
-
         _render: function() {
+            console.log("render darkroom")
             this.destroy_content();
             this._init_darkroom(this.record.context.click);
             var self = this;
@@ -247,7 +266,6 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
                     });
                 }
             }
-            //console.log(url);
             var $img = $(qweb.render("FieldBinaryImage-img", {widget: this, url: url}));
             this.$('> img').remove();
             this.$el.prepend($img);
@@ -258,10 +276,19 @@ odoo.define('web_widget_darkroom.darkroom_widget', function(require) {
             });
             //shursh mode
             //this.darkroom = new Darkroom($img.get(0), this.options);
+/*            console.log($img.get(0));
+            console.log(this.value);*/
             var opt = _.defaults(this.record.context.options, this.nodeOptions);
             this.darkroom = new Darkroom($img.get(0), opt);
+            //this.darkroom = new Darkroom('data:image/png;base64,' + this.value, opt);
             this.darkroom.widget = this;
             },
+
+/*            commit_value: function() {
+                if (this.darkroom.sourceImage) {
+                    this._set_value(this.darkroom.sourceImage.toDataURL().split(',')[1]);
+                }
+            },*/
     });
 
     field_registry.add('darkroom', FieldDarkroomImage);
